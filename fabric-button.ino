@@ -17,6 +17,7 @@ void setup() {
 void loop() {
   int button1State = digitalRead(button1Pin);
   int button2State = digitalRead(button2Pin);
+  Serial.println(button1State);
 
   if (button1State == LOW && !isButton1On) {
     isButton1On = true;
@@ -29,7 +30,7 @@ void loop() {
   if (button2State == LOW && !isButton2On) {
     isButton2On = true;
     Serial.println("Trigger Note 2");
-    noteOn(0, 48, 64);
+    noteOn(0, 82, 64);
   } else if (button2State == HIGH) {
     isButton2On = false;
   }
