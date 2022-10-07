@@ -1,38 +1,39 @@
 #include "MIDIUSB.h"
 
-// NOTE: Button 2 Untested, but generally a simple version of the 
-// code might look like this.
-
 const int button1Pin = 14;
-const int button2Pin = 15;
-bool isButton1On = false;
-bool isButton2On = false;
+const int numRecordings = 8;
+
+bool isButtonOn = false;
+unsigned long buttonPressCount = 0;
 
 void setup() {
   Serial.begin(115200);
   pinMode(button1Pin, INPUT_PULLDOWN);
-  pinMode(button2Pin, INPUT_PULLDOWN);
 }
 
 void loop() {
-  int button1State = digitalRead(button1Pin);
-  int button2State = digitalRead(button2Pin);
-  Serial.println(button1State);
+  int buttonState = digitalRead(button1Pin);
+  Serial.println(buttonState);
+ 
+  int buttonSampleIndex = buttonPressCount % numRecordings;
+  int midiNote = 48 - buttonSampleIndex;
 
-  if (button1State == LOW && !isButton1On) {
-    isButton1On = true;
-    Serial.println("Trigger Note 1");
-    noteOn(0, 48, 64);
-  } else if (button1State == HIGH) {
-    isButton1On = false;
-  }
+  if (buttonState == HIGH && !isButtonOn) {
+    isButtonOn = true;
+    buttonPressCount++;
+  
+    Serial.print("Button Press Count: ");
+    Serial.println(buttonPressCount);
+    Serial.print("Button Sample Index: ");
+    Serial.println(buttonSampleIndex);
 
-  if (button2State == LOW && !isButton2On) {
-    isButton2On = true;
-    Serial.println("Trigger Note 2");
-    noteOn(0, 82, 64);
-  } else if (button2State == HIGH) {
-    isButton2On = false;
+    // Turn off the prior MIDI note so that the sounds don't overlap.
+    noteOff(4, midiNote + 1, 64);
+
+    // Play the new MIDI note!   
+    noteOn(4, midiNote, 64);
+  } else if (buttonState == LOW) {
+    isButtonOn = false;
   }
 
   delay(50);
@@ -45,6 +46,17 @@ void loop() {
 // Fourth parameter is the velocity (64 = normal, 127 = fastest).
 
 void noteOn(byte channel, byte pitch, byte velocity) {
+  Serial.print("Midi Note On: ");
+  Serial.println(pitch);
+  
   midiEventPacket_t noteOn = {0x09, 0x90 | channel, pitch, velocity};
   MidiUSB.sendMIDI(noteOn);
+}
+
+void noteOff(byte channel, byte pitch, byte velocity) {
+  Serial.print("Midi Note Off: ");
+  Serial.println(pitch);
+  
+  midiEventPacket_t noteOff = {0x08, 0x80 | channel, pitch, velocity};
+  MidiUSB.sendMIDI(noteOff);
 }
